@@ -313,6 +313,13 @@ func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction
 	txs := make(map[common.Address][]*LazyTransaction)
 	for _, subpool := range p.subpools {
 		for addr, set := range subpool.Pending(enforceTips) {
+			fmt.Printf("Transactions for address: %s\n", addr.Hex())
+			for _, tx := range set {
+				// Print transaction details
+				fmt.Printf("Nonce: %d, Gas Price: %s, Value: %s, Data: %x\n",
+					tx.Tx.Nonce(), tx.Tx.GasPrice(), tx.Tx.Value(), tx.Tx.Data())
+				// You can print other transaction details as needed
+			}
 			txs[addr] = set
 		}
 	}
@@ -368,6 +375,12 @@ func (p *TxPool) Content() (map[common.Address][]*types.Transaction, map[common.
 		run, block := subpool.Content()
 
 		for addr, txs := range run {
+			fmt.Println("Runnable Transactions:")
+			for _, tx := range txs {
+				// Print all values of the transaction
+				fmt.Printf("Transaction Time: %v\n", tx.Data())
+				// Print other transaction fields as needed
+			}
 			runnable[addr] = txs
 		}
 		for addr, txs := range block {
