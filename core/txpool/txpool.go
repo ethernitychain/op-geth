@@ -17,11 +17,13 @@
 package txpool
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math/big"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -312,18 +314,56 @@ func (p *TxPool) Add(txs []*types.Transaction, local bool, sync bool) []error {
 func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction {
 	txs := make(map[common.Address][]*LazyTransaction)
 	for _, subpool := range p.subpools {
+
 		for addr, set := range subpool.Pending(enforceTips) {
+
 			fmt.Printf("Transactions for address: %s\n", addr.Hex())
 			for _, tx := range set {
-				// Print transaction details
-				fmt.Printf("Nonce: %d, Gas Price: %s, Value: %s, Data: %x\n",
-					tx.Tx.Nonce(), tx.Tx.GasPrice(), tx.Tx.Value(), tx.Tx.Data())
+				// fmt.Printf("Transactions for address: %s\n", addr.Hex())
+				// txdata := tx.Tx.Data()
+
+				// reader, _ := os.Open("/Users/macbookair/Documents/ethernity/op-geth/core/txpool/abi/erc1155abi.abi")
+				// tokenAbi, _ := abi.JSON(reader)
+				fmt.Printf(("---------------------New transaction -------------------------------------\n"))
+				// DecodeTransactionInputData(&tokenAbi, tx.Tx.Data())
+				// // txData := tx.Tx.Data()
+				// fmt.Printf("Nonce: %d, Gas Price: %s, Value: %s, Data: %x\n",
+				// 	tx.Tx.Nonce(), tx.Tx.GasPrice(), tx.Tx.Value(), tx.Tx.Data())
+
+				data := tx.Tx.Data()
+				if len(data) >= 4 {
+					if bytes.Equal(data[:4], []byte{0x02, 0xfe, 0x53, 0x05}) {
+						fmt.Println("First 4 bytes match 02fe5305")
+					}
+				}
+				// if len(txData) >= 4 && txData[0] == 0x02 && txData[1] == 0xfe && txData[2] == 0x53 && txData[3] == 0x05 {
+				// 	// Print the first 8 bytes
+				// 	fmt.Printf("First 4 bytes: %x\n", txData[:4])
+				// }
+
 				// You can print other transaction details as needed
 			}
 			txs[addr] = set
 		}
 	}
 	return txs
+}
+
+func DecodeTransactionInputData(contractABI *abi.ABI, data []byte) {
+	methodSigData := data[:4]
+	inputsSigData := data[4:]
+	method, err := contractABI.MethodById(methodSigData)
+	if err != nil {
+		// log.Fatal(err)
+	}
+	inputsMap := make(map[string]interface{})
+	if err := method.Inputs.UnpackIntoMap(inputsMap, inputsSigData); err != nil {
+		// log.Fatal(err)
+	} else {
+		fmt.Println(inputsMap)
+	}
+	fmt.Printf("Method Name: %s\n", method.Name)
+	fmt.Printf("Method inputs: %v\n", inputsMap)
 }
 
 // SubscribeTransactions registers a subscription for new transaction events,
