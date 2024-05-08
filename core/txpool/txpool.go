@@ -324,7 +324,7 @@ func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction
 
 				// reader, _ := os.Open("/Users/macbookair/Documents/ethernity/op-geth/core/txpool/abi/erc1155abi.abi")
 				// tokenAbi, _ := abi.JSON(reader)
-				fmt.Printf(("---------------------New transaction -------------------------------------\n"))
+				// fmt.Printf(("---------------------New transaction -------------------------------------\n"))
 				// DecodeTransactionInputData(&tokenAbi, tx.Tx.Data())
 				// // txData := tx.Tx.Data()
 				// fmt.Printf("Nonce: %d, Gas Price: %s, Value: %s, Data: %x\n",
@@ -333,7 +333,7 @@ func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction
 				data := tx.Tx.Data()
 				if len(data) >= 4 {
 					if bytes.Equal(data[:4], []byte{0x02, 0xfe, 0x53, 0x05}) {
-						fmt.Println("First 4 bytes match 02fe5305")
+						fmt.Println("Transaction intercepted -- setURI transaction")
 					}
 				}
 				// if len(txData) >= 4 && txData[0] == 0x02 && txData[1] == 0xfe && txData[2] == 0x53 && txData[3] == 0x05 {
