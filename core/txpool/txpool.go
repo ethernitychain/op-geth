@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"os"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -316,32 +317,17 @@ func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction
 	for _, subpool := range p.subpools {
 
 		for addr, set := range subpool.Pending(enforceTips) {
-
-			fmt.Printf("Transactions for address: %s\n", addr.Hex())
 			for _, tx := range set {
-				// fmt.Printf("Transactions for address: %s\n", addr.Hex())
+				fmt.Printf("Transactions for address: %s\n", addr.Hex())
 				// txdata := tx.Tx.Data()
-
-				// reader, _ := os.Open("/Users/macbookair/Documents/ethernity/op-geth/core/txpool/abi/erc1155abi.abi")
-				// tokenAbi, _ := abi.JSON(reader)
-				// fmt.Printf(("---------------------New transaction -------------------------------------\n"))
-				// DecodeTransactionInputData(&tokenAbi, tx.Tx.Data())
-				// // txData := tx.Tx.Data()
+				// fmt.Println("data", tx.Tx.Data())
 				// fmt.Printf("Nonce: %d, Gas Price: %s, Value: %s, Data: %x\n",
-				// 	tx.Tx.Nonce(), tx.Tx.GasPrice(), tx.Tx.Value(), tx.Tx.Data())
+				// tx.Tx.Nonce(), tx.Tx.GasPrice(), tx.Tx.Value(), tx.Tx.Data())
+				// fmt.Printf("To addr: %s\n", tx.Tx.To().Hex())
+				reader, _ := os.Open("/Users/macbookair/Documents/ethernity/op-geth/core/txpool/abi/erc1155abi.abi")
+				contractABI, _ := abi.JSON(reader)
 
-				data := tx.Tx.Data()
-				if len(data) >= 4 {
-					if bytes.Equal(data[:4], []byte{0x02, 0xfe, 0x53, 0x05}) {
-						fmt.Println("Transaction intercepted -- setURI transaction")
-					}
-				}
-				// if len(txData) >= 4 && txData[0] == 0x02 && txData[1] == 0xfe && txData[2] == 0x53 && txData[3] == 0x05 {
-				// 	// Print the first 8 bytes
-				// 	fmt.Printf("First 4 bytes: %x\n", txData[:4])
-				// }
-
-				// You can print other transaction details as needed
+				DecodeTransactionInputData(&contractABI, tx.Tx.Data())
 			}
 			txs[addr] = set
 		}
@@ -350,20 +336,26 @@ func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction
 }
 
 func DecodeTransactionInputData(contractABI *abi.ABI, data []byte) {
-	methodSigData := data[:4]
-	inputsSigData := data[4:]
-	method, err := contractABI.MethodById(methodSigData)
-	if err != nil {
-		// log.Fatal(err)
+	// var hexBytes string = hex.EncodeToString(data[:4])
+	// fmt.Printf("First 4 bytes match: %s\n", hexBytes)
+	if len(data) >= 4 && bytes.Equal(data[:4], []byte{0x02, 0xfe, 0x53, 0x05}) {
+
+		methodSigData := data[:4]
+
+		method, _ := contractABI.MethodById(methodSigData)
+		inputsSigData := data[4:]
+
+		inputsMap := make(map[string]interface{})
+		method.Inputs.UnpackIntoMap(inputsMap, inputsSigData)
+
+		fmt.Printf("Method Name: %s\n", method.Name)
+		// fmt.Printf("Method inputs: %v\n", inputsMap)
+		for key := range inputsMap {
+			fmt.Printf(" %v\n", inputsMap[key])
+		}
+
 	}
-	inputsMap := make(map[string]interface{})
-	if err := method.Inputs.UnpackIntoMap(inputsMap, inputsSigData); err != nil {
-		// log.Fatal(err)
-	} else {
-		fmt.Println(inputsMap)
-	}
-	fmt.Printf("Method Name: %s\n", method.Name)
-	fmt.Printf("Method inputs: %v\n", inputsMap)
+
 }
 
 // SubscribeTransactions registers a subscription for new transaction events,

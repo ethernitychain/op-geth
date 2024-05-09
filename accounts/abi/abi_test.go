@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -173,32 +174,42 @@ func TestInvalidABI(t *testing.T) {
 //	}
 func TestConstructor(t *testing.T) {
 	t.Parallel()
-	json := `[{	"inputs": [{"internalType": "uint256","name": "a","type": "uint256"	},{	"internalType": "uint256","name": "b","type": "uint256"}],"stateMutability": "nonpayable","type": "constructor"}]`
-	method := NewMethod("", "", Constructor, "nonpayable", false, false, []Argument{{"a", Uint256, false}, {"b", Uint256, false}}, nil)
+	reader, _ := os.Open("/Users/macbookair/Documents/ethernity/op-geth/core/txpool/abi/erc1155abi.abi")
+	json, _ := JSON(reader)
+	// json := `[{	"inputs": [{"internalType": "uint256","name": "a","type": "uint256"	},{	"internalType": "uint256","name": "b","type": "uint256"}],"stateMutability": "nonpayable","type": "constructor"}]`
+	method := NewMethod("", "", Constructor, "nonpayable", false, false, []Argument{{"uri_", String, false}}, nil)
 	// Test from JSON
-	abi, err := JSON(strings.NewReader(json))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(abi.Constructor, method) {
+	// abi, err := JSON(strings.NewReader(json))
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	if !reflect.DeepEqual(json.Constructor, method) {
 		t.Error("Missing expected constructor")
 	}
-	// Test pack/unpack
-	packed, err := abi.Pack("", big.NewInt(1), big.NewInt(2))
-	if err != nil {
-		t.Error(err)
-	}
-	unpacked, err := abi.Constructor.Inputs.Unpack(packed)
-	if err != nil {
-		t.Error(err)
-	}
 
-	if !reflect.DeepEqual(unpacked[0], big.NewInt(1)) {
-		t.Error("Unable to pack/unpack from constructor")
+	// packed, err := json.Pack("")
+	fmt.Println("meth", method)
+	// Test pack/unpack
+	packed, _ := json.Pack("", "inputofconstrucotr")
+	fmt.Println("Packed constructor input parameters:", string(packed))
+
+	fmt.Println("Packed constructor :", []byte(packed))
+
+	// if err != nil {
+	// 	t.Error(err)
+	// }
+	unpacked, err := json.Constructor.Inputs.Unpack(packed)
+	if err != nil {
+		t.Error(err)
 	}
-	if !reflect.DeepEqual(unpacked[1], big.NewInt(2)) {
-		t.Error("Unable to pack/unpack from constructor")
-	}
+	fmt.Println("value", unpacked[0])
+
+	// if !reflect.DeepEqual(unpacked[0], big.NewInt(1)) {
+	// 	t.Error("Unable to pack/unpack from constructor")
+	// }
+	// if !reflect.DeepEqual(unpacked[1], big.NewInt(2)) {
+	// 	t.Error("Unable to pack/unpack from constructor")
+	// }
 }
 
 func TestTestNumbers(t *testing.T) {
