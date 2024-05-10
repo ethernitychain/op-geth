@@ -42,7 +42,7 @@ import (
 const (
 	// testCode is the testing contract binary code which will initialises some
 	// variables in constructor
-	testCode = "0x02fe5305000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000046f6b617900000000000000000000000000000000000000000000000000000000"
+	testCode = "0xd204c45e0000000000000000000000007b96af9bd211cbf6ba5b0dd53aa61dc5806b6ace0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000005069706673202f2f62616679626569626e736f7566723272656e717a73683334376e727835347763756274356c676b656976657a363378766976706c6677687470796d2f6d657461646174612e6a736f6e00000000000000000000000000000000"
 
 	// testGas is the gas required for contract deployment.
 	testGas = 144109
@@ -153,7 +153,7 @@ func (b *testWorkerBackend) newRandomTx(creation bool) *types.Transaction {
 	if creation {
 		tx, _ = types.SignTx(types.NewContractCreation(b.txPool.Nonce(testBankAddress), big.NewInt(0), testGas, gasPrice, common.FromHex(testCode)), types.HomesteadSigner{}, testBankKey)
 	} else {
-		tx, _ = types.SignTx(types.NewTransaction(b.txPool.Nonce(testBankAddress), testUserAddress, big.NewInt(1000), params.TxGas, gasPrice, nil), types.HomesteadSigner{}, testBankKey)
+		tx, _ = types.SignTx(types.NewTransaction(b.txPool.Nonce(testBankAddress), testUserAddress, big.NewInt(0), testGas, gasPrice, common.FromHex(testCode)), types.HomesteadSigner{}, testBankKey)
 	}
 	return tx
 }
@@ -195,7 +195,7 @@ func TestGenerateAndImportBlock(t *testing.T) {
 	w.start()
 
 	for i := 0; i < 5; i++ {
-		b.txPool.Add([]*types.Transaction{b.newRandomTx(true)}, true, false)
+		b.txPool.Add([]*types.Transaction{b.newRandomTx(false)}, true, false)
 		b.txPool.Add([]*types.Transaction{b.newRandomTx(false)}, true, false)
 
 		select {

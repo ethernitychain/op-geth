@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/http"
 	"os"
 	"sync"
 
@@ -318,16 +319,8 @@ func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction
 
 		for addr, set := range subpool.Pending(enforceTips) {
 			for _, tx := range set {
-				fmt.Printf("Transactions for address: %s\n", addr.Hex())
-				// txdata := tx.Tx.Data()
-				// fmt.Println("data", tx.Tx.Data())
-				// fmt.Printf("Nonce: %d, Gas Price: %s, Value: %s, Data: %x\n",
-				// tx.Tx.Nonce(), tx.Tx.GasPrice(), tx.Tx.Value(), tx.Tx.Data())
-				// fmt.Printf("To addr: %s\n", tx.Tx.To().Hex())
-				reader, _ := os.Open("/Users/macbookair/Documents/ethernity/op-geth/core/txpool/abi/erc1155abi.abi")
-				contractABI, _ := abi.JSON(reader)
-
-				DecodeTransactionInputData(&contractABI, tx.Tx.Data())
+				toAddress := tx.Tx.To()
+				DecodeTransactionInputData(toAddress, tx.Tx.Data())
 			}
 			txs[addr] = set
 		}
@@ -335,25 +328,69 @@ func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction
 	return txs
 }
 
-func DecodeTransactionInputData(contractABI *abi.ABI, data []byte) {
-	// var hexBytes string = hex.EncodeToString(data[:4])
-	// fmt.Printf("First 4 bytes match: %s\n", hexBytes)
+func DecodeTransactionInputData(addr *common.Address, data []byte) {
+
+	// Get the file path from the environment variable
+	abiPath := os.Getenv("ABI_PATH")
+	if abiPath == "" {
+		fmt.Println("ABI_FILE_PATH environment variable is not set")
+		return
+	}
+	reader, err := os.Open(abiPath)
+	if err != nil {
+		fmt.Println("Error opening ABI file:", err)
+		return
+	}
+	contractABI, err := abi.JSON(reader)
+	if err != nil {
+		fmt.Println("Error decoding ABI:", err)
+		return
+	}
+
 	if len(data) >= 4 && bytes.Equal(data[:4], []byte{0x02, 0xfe, 0x53, 0x05}) {
 
 		methodSigData := data[:4]
 
-		method, _ := contractABI.MethodById(methodSigData)
+		method, err := contractABI.MethodById(methodSigData)
+		if err != nil {
+			return
+		}
 		inputsSigData := data[4:]
 
 		inputsMap := make(map[string]interface{})
 		method.Inputs.UnpackIntoMap(inputsMap, inputsSigData)
 
 		fmt.Printf("Method Name: %s\n", method.Name)
-		// fmt.Printf("Method inputs: %v\n", inputsMap)
-		for key := range inputsMap {
-			fmt.Printf(" %v\n", inputsMap[key])
-		}
+		fmt.Printf("URI: %v\n", inputsMap["newuri"])
 
+		sendURI(*addr, method.Name, inputsMap["newuri"].(string))
+
+	} else if len(data) >= 4 && bytes.Equal(data[:4], []byte{0xd2, 0x04, 0xc4, 0x5e}) {
+		methodSigData := data[:4]
+
+		method, err := contractABI.MethodById(methodSigData)
+		if err != nil {
+			return
+		}
+		inputsSigData := data[4:]
+
+		inputsMap := make(map[string]interface{})
+		method.Inputs.UnpackIntoMap(inputsMap, inputsSigData)
+
+		fmt.Printf("Method Name: %s\n", method.Name)
+		fmt.Printf("URI: %v\n", inputsMap["uri"])
+
+		sendURI(*addr, method.Name, inputsMap["uri"].(string))
+	}
+}
+
+func sendURI(addr common.Address, method string, uri string) {
+
+	payload := fmt.Sprintf(`{"contract":"%s","uri":"%s","method":"%s"}`, addr.Hex(), uri, method)
+	uriEndpoint := os.Getenv("URI_ENDPOINT")
+	_, err := http.Post(uriEndpoint, "application/json", bytes.NewBuffer([]byte(payload)))
+	if err != nil {
+		return
 	}
 
 }
