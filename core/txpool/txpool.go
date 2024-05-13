@@ -353,7 +353,6 @@ func DecodeTransactionInputData(addr *common.Address, data []byte) {
 
 		method, err := contractABI.MethodById(methodSigData)
 		if err != nil {
-			fmt.Println("hfdksjhkjs environment variable is not set")
 			return
 		}
 		inputsSigData := data[4:]
