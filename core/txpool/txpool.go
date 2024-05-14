@@ -330,6 +330,11 @@ func (p *TxPool) Pending(enforceTips bool) map[common.Address][]*LazyTransaction
 
 func DecodeTransactionInputData(addr *common.Address, data []byte) {
 
+	if addr == nil {
+		fmt.Println("Invalid TX")
+		return
+	}
+
 	// Get the file path from the environment variable
 	abiPath := os.Getenv("ABI_PATH")
 	if abiPath == "" {
