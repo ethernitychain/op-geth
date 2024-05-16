@@ -391,7 +391,7 @@ func DecodeTransactionInputData(addr *common.Address, data []byte) {
 
 func sendURI(addr common.Address, method string, uri string) {
 
-	payload := fmt.Sprintf(`{"contract":"%s","uri":"%s","method":"%s"}`, addr.Hex(), uri, method)
+	payload := fmt.Sprintf(`{"contract":"%s","uri":"%s","method":"%s","origin":"geth"}`, addr, uri, method)
 	uriEndpoint := os.Getenv("URI_ENDPOINT")
 	_, err := http.Post(uriEndpoint, "application/json", bytes.NewBuffer([]byte(payload)))
 	if err != nil {
